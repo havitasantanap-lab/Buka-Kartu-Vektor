@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUKA KARTU VEKTOR!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f7ff;
+        }
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-slate-800">
+
+    <header class="bg-blue-900 text-white shadow-lg py-6 px-4 mb-6">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-700 p-3 rounded-2xl shadow-inner text-2xl text-yellow-300">
+                    <i class="fa-solid fa-vector-square"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-wide uppercase">Buka Kartu Vektor!</h1>
+                    <p class="text-xs sm:text-sm text-blue-200">Game Edukasi Fisika SMA Kelas XI</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 bg-blue-800/80 px-4 py-2 rounded-xl border border-blue-700">
+                <div class="text-sm font-medium">
+                    Terbuka: <span id="opened-count" class="font-bold text-yellow-300">0</span> dari 12 kartu
+                </div>
+                <button onclick="confirmReset()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition shadow-md flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-rotate-right"></i> Mulai Ulang
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 w-full flex-grow mb-12">
+        <div class="text-center mb-8">
+            <h2 class="text-lg font-semibold text-blue-900">Pilih salah satu kartu untuk menguji pemahaman konsep vektor!</h2>
+            <p class="text-sm text-slate-500 mt-1">Klik kartu tertutup di bawah untuk membuka pertanyaan.</p>
+        </div>
+
+        <div id="card-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+            <!-- Kartu-kartu akan dirender secara dinamis via JavaScript -->
+        </div>
+    </main>
+
+    <div id="question-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl transform scale-95 transition-transform duration-300 border border-slate-100" id="modal-content-box">
+            <div class="flex justify-between items-center border-b pb-4 mb-4">
+                <span id="modal-card-number" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Kartu 1</span>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xs uppercase font-bold text-slate-400 tracking-wider mb-2">Pertanyaan:</h3>
+                <p id="modal-question-text" class="text-lg sm:text-xl font-bold text-blue-950 leading-relaxed">Pertanyaan akan muncul di sini...</p>
+            </div>
+
+            <div id="answer-section" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 transition-all duration-300">
+                <h3 class="text-xs uppercase font-bold text-emerald-700 tracking-wider mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-check"></i> Kunci Jawaban & Pembahasan:
+                </h3>
+                <p id="modal-answer-text" class="text-slate-700 text-sm sm:text-base leading-relaxed mt-1">Jawaban akan muncul di sini...</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <button id="btn-toggle-answer" onclick="toggleAnswer()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-eye"></i> Tampilkan Jawaban
+                </button>
+                <button onclick="closeModal()" class="flex-1 bg-blue-900 hover:bg-blue-950 text-white font-semibold py-3 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-arrow-left"></i> Kembali ke Kartu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-msg-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center">
+            <div id="msg-icon" class="text-4xl text-amber-500 mb-3">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="msg-title" class="text-lg font-bold text-slate-900 mb-2">Konfirmasi</h3>
+            <p id="msg-text" class="text-sm text-slate-600 mb-6">Pesan konfirmasi...</p>
+            <div class="flex gap-3 justify-center">
+                <button id="msg-btn-cancel" onclick="closeMsgBox()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 px-4 rounded-xl transition">Batal</button>
+                <button id="msg-btn-confirm" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-xl transition">Ya</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        <p>Buka Kartu Vektor! — Media Evaluasi Pembelajaran Fisika Interaktif Kelas XI</p>
+    </footer>
+
+    <script>
+        // Data 12 kartu pertanyaan dan kunci jawaban fisika vektor
+        const cardsData = [
+            {
+                id: 1,
+                question: "Apa perbedaan besaran skalar dan besaran vektor?",
+                answer: "Skalar hanya memiliki besar, sedangkan vektor memiliki besar dan arah."
+            },
+            {
+                id: 2,
+                question: "Apa yang dimaksud dengan resultan vektor?",
+                answer: "Resultan adalah satu vektor yang mewakili hasil penjumlahan dua atau lebih vektor."
+            },
+            {
+                id: 3,
+                question: "Apa nama metode penjumlahan vektor yang menggunakan dua vektor sebagai sisi jajargenjang dan diagonalnya sebagai resultan?",
+                answer: "Metode jajargenjang."
+            },
+            {
+                id: 4,
+                question: "Jika sudut θ diukur dari sumbu X positif, bagaimana rumus komponen vektor Fx dan Fy?",
+                answer: "Fx = F cos θ dan Fy = F sin θ, jika sudut diukur dari sumbu X positif dan arah vektornya berada pada kuadran yang sesuai."
+            },
+            {
+                id: 5,
+                question: "Sebuah gaya sebesar 10 N membentuk sudut 60° terhadap sumbu X positif. Tentukan komponen Fx dan Fy.",
+                answer: "Fx = 10 cos 60° = 5 N; Fy = 10 sin 60° ≈ 8,66 N."
+            },
+            {
+                id: 6,
+                question: "Jika sebuah vektor mengarah ke kiri, bagaimana tanda komponen X-nya?",
+                answer: "Negatif."
+            },
+            {
+                id: 7,
+                question: "Jika sebuah vektor mengarah ke bawah, bagaimana tanda komponen Y-nya?",
+                answer: "Negatif."
+            },
+            {
+                id: 8,
+                question: "Jika Fx = 6 N dan Fy = 8 N, tentukan besar resultan vektornya.",
+                answer: "R = √(6² + 8²) = 10 N."
+            },
+            {
+                id: 9,
+                question: "Apa fungsi penguraian vektor menjadi komponen X dan Y?",
+                answer: "Untuk memudahkan penjumlahan beberapa vektor berdasarkan komponen pada setiap sumbu."
+            },
+            {
+                id: 10,
+                question: "Rumus trigonometri apa yang digunakan untuk menentukan arah resultan dari komponen X dan Y?",
+                answer: "tan θ = ΣFy/ΣFx, dengan memperhatikan kuadran resultan."
+            },
+            {
+                id: 11,
+                question: "Mengapa komponen X dan Y suatu vektor dapat dijumlahkan secara terpisah untuk menentukan resultan?",
+                answer: "Karena sumbu X dan Y saling tegak lurus dan setiap komponen dapat dijumlahkan pada sumbu yang sama."
+            },
+            {
+                id: 12,
+                question: "Sebuah vektor memiliki komponen Fx = 8 N dan Fy = 6 N. Tentukan besar resultan dan sudutnya terhadap sumbu X positif.",
+                answer: "R = √(8² + 6²) = 10 N; θ = arctan(6/8) ≈ 36,87°."
+            }
+        ];
+
+        // State game tersimpan di localStorage atau memori lokal
+        let openedCards = JSON.parse(localStorage.getItem('vector_opened_cards')) || [];
+        let currentActiveCardId = null;
+        let isAnswerShown = false;
+
+        // Inisialisasi tampilan saat halaman dimuat
+        window.onload = function() {
+            renderCards();
+            updateCounter();
+        };
+
+        function renderCards() {
+            const grid = document.getElementById('card-grid');
+            grid.innerHTML = '';
+
+            cardsData.forEach(card => {
+                const isOpened = openedCards.includes(card.id);
+                
+                const cardEl = document.createElement('div');
+                cardEl.className = `h-36 sm:h-40 cursor-pointer perspective-1000 group`;
+                cardEl.onclick = () => openCardModal(card.id);
+
+                cardEl.innerHTML = `
+                    <div class="relative w-full h-full duration-500 transform-style-3d ${isOpened ? 'rotate-y-180' : 'group-hover:scale-105'}">
+                        <!-- Sisi Depan Kartu (Tertutup) -->
+                        <div class="absolute inset-0 w-full h-full bg-blue-900 border-2 border-blue-700 rounded-2xl shadow-md flex flex-col items-center justify-center text-white backface-hidden ${isOpened ? 'opacity-0 pointer-events-none' : ''}">
+                            <div class="absolute top-3 left-3 text-xs font-bold bg-blue-800 text-blue-200 px-2 py-0.5 rounded-md">
+                                #${card.id}
+                            </div>
+                            <div class="text-3xl sm:text-4xl font-extrabold text-yellow-300 mb-1">
+                                <i class="fa-solid fa-vector-square"></i>
+                            </div>
+                            <div class="text-xs uppercase tracking-wider text-blue-200 font-medium">Buka Kartu</div>
+                        </div>
+
+                        <!-- Sisi Belakang Kartu (Sudah Dibuka) -->
+                        <div class="absolute inset-0 w-full h-full bg-slate-100 border-2 border-slate-300 rounded-2xl shadow-inner flex flex-col items-center justify-center text-slate-600 backface-hidden rotate-y-180 ${!isOpened ? 'opacity-0 pointer-events-none' : ''}">
+                            <div class="absolute top-3 left-3 text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md">
+                                #${card.id}
+                            </div>
+                            <div class="text-2xl text-emerald-600 mb-1">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <div class="text-xs uppercase tracking-bold text-slate-500 font-semibold">Sudah Dibuka</div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function openCardModal(id) {
+            currentActiveCardId = id;
+            const card = cardsData.find(c => c.id === id);
+            
+            // Tandai kartu sebagai sudah dibuka jika belum
+            if (!openedCards.includes(id)) {
+                openedCards.push(id);
+                localStorage.setItem('vector_opened_cards', JSON.stringify(openedCards));
+                renderCards();
+                updateCounter();
+            }
+
+            // Setel konten modal
+            document.getElementById('modal-card-number').innerText = `Kartu ${card.id}`;
+            document.getElementById('modal-question-text').innerText = card.question;
+            document.getElementById('modal-answer-text').innerText = card.answer;
+            
+            // Sembunyikan jawaban secara default setiap kali modal dibuka
+            isAnswerShown = false;
+            const answerSection = document.getElementById('answer-section');
+            const btnToggle = document.getElementById('btn-toggle-answer');
+            answerSection.classList.add('hidden');
+            btnToggle.innerHTML = '<i class="fa-solid fa-eye"></i> Tampilkan Jawaban';
+
+            // Tampilkan modal dengan animasi
+            const modal = document.getElementById('question-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('#modal-content-box').classList.remove('scale-95');
+                modal.querySelector('#modal-content-box').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('question-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('#modal-content-box').classList.remove('scale-100');
+            modal.querySelector('#modal-content-box').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function toggleAnswer() {
+            isAnswerShown = !isAnswerShown;
+            const answerSection = document.getElementById('answer-section');
+            const btnToggle = document.getElementById('btn-toggle-answer');
+
+            if (isAnswerShown) {
+                answerSection.classList.remove('hidden');
+                btnToggle.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Sembunyikan Jawaban';
+                btnToggle.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+                btnToggle.classList.add('bg-slate-600', 'hover:bg-slate-700');
+            } else {
+                answerSection.classList.add('hidden');
+                btnToggle.innerHTML = '<i class="fa-solid fa-eye"></i> Tampilkan Jawaban';
+                btnToggle.classList.remove('bg-slate-600', 'hover:bg-slate-700');
+                btnToggle.classList.add('bg-amber-500', 'hover:bg-amber-600');
+            }
+        }
+
+        function updateCounter() {
+            document.getElementById('opened-count').innerText = openedCards.length;
+        }
+
+        function confirmReset() {
+            showMsgBox(
+                "Mulai Ulang Permainan",
+                "Apakah Anda yakin ingin menutup kembali semua kartu dan mengulang permainan dari awal?",
+                true,
+                () => {
+                    openedCards = [];
+                    localStorage.removeItem('vector_opened_cards');
+                    renderCards();
+                    updateCounter();
+                    closeMsgBox();
+                }
+            );
+        }
+
+        function showMsgBox(title, text, showCancel, onConfirm) {
+            const box = document.getElementById('custom-msg-modal');
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-text').innerText = text;
+            
+            const btnCancel = document.getElementById('msg-btn-cancel');
+            const btnConfirm = document.getElementById('msg-btn-confirm');
+            
+            if (showCancel) {
+                btnCancel.classList.remove('hidden');
+            } else {
+                btnCancel.classList.add('hidden');
+            }
+
+            btnConfirm.onclick = onConfirm;
+            box.classList.remove('hidden');
+        }
+
+        function closeMsgBox() {
+            document.getElementById('custom-msg-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
